@@ -1,4 +1,5 @@
 import { IMessageSDK } from '@photon-ai/imessage-kit';
+import { getContactMap, getContactName } from './contacts';
 
 // Singleton instance
 let sdkInstance: IMessageSDK | null = null;
@@ -21,6 +22,7 @@ export type ChatSummary = {
 
 export async function getGlobalStats() {
   const sdk = getSdk();
+  const contactMap = await getContactMap();
   
   // Explicitly include own messages
   const messages = await sdk.getMessages({ 
@@ -48,9 +50,17 @@ export async function getGlobalStats() {
     .slice(0, 5)
     .map(([id, count]) => {
       const chat = allChats.find(c => c.chatId === id);
+      let name = chat?.displayName || id;
+      
+      // Try to resolve name via contacts if it's just a phone number
+      if (!chat?.displayName && id.includes('+')) {
+          const resolvedName = getContactName(id, contactMap);
+          if (resolvedName) name = resolvedName;
+      }
+
       return {
         id,
-        name: chat?.displayName || id,
+        name,
         count
       };
     });
@@ -67,6 +77,18 @@ export async function getGlobalStats() {
   const history = Object.entries(activityByMonth)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, stats]) => ({ date, ...stats }));
+  
+  // Enrich recent chats with names
+  const recentChats = allChats.slice(0, 20).map(chat => {
+      let name = chat.displayName || chat.chatId;
+      if (!chat.displayName) {
+          // Extract handle from iMessage;+123... or use raw ID
+          const handle = chat.chatId.includes(';') ? chat.chatId.split(';').pop()! : chat.chatId;
+          const resolvedName = getContactName(handle, contactMap);
+          if (resolvedName) name = resolvedName;
+      }
+      return { ...chat, displayName: name };
+  });
 
   return {
     totalMessages: messages.total,
@@ -74,14 +96,14 @@ export async function getGlobalStats() {
     received,
     topContacts,
     history,
-    recentChats: allChats.slice(0, 20)
+    recentChats
   };
 }
 
 export async function getChatDetails(chatId: string) {
   console.log(`[getChatDetails] Fetching details for chatId: "${chatId}"`);
   const sdk = getSdk();
-
+  
   // Normalize chatId if it's an iMessage/SMS format to just the handle
   // The SDK documentation says it handles this, but let's try querying by the raw handle if the prefixed one fails.
   // Or better yet, try both.

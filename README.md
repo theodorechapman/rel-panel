@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# iMessage Insights Dashboard
 
-## Getting Started
+A local dashboard for visualizing your iMessage history and getting relationship insights. Built with [Next.js](https://nextjs.org/), [@photon-ai/imessage-kit](https://github.com/photon-ai/imessage-kit), and [shadcn/ui](https://ui.shadcn.com/).
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Global Dashboard**:
+  - Total message volume and sent/received ratio.
+  - Activity heatmap (last 12 months).
+  - Top 5 most active contacts.
+  - List of recent conversations with real contact names (via local Contacts integration).
+  
+- **Conversation Insights**:
+  - Deep dive into individual chats.
+  - Hourly activity breakdown (when do you talk the most?).
+  - "Who texts first?" analysis (initiation stats).
+  - Top words usage frequency.
+  - Searchable message history viewer.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Prerequisites
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **macOS**: This project only works on macOS as it reads the local iMessage database (`chat.db`).
+- **Node.js**: Version 18 or higher.
+- **Permissions**: You must grant **Full Disk Access** and **Contacts** access to your terminal/IDE.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Installation
 
-## Learn More
+1. **Clone the repository** (or navigate to the project directory):
+   ```bash
+   cd rel-panel
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Grant Permissions**:
+   - Go to **System Settings** > **Privacy & Security**.
+   - **Full Disk Access**: Add your terminal (e.g., Terminal, iTerm, VS Code, Cursor). This is required to read `~/Library/Messages/chat.db`.
+   - **Contacts**: Allow your terminal to access Contacts. This is used to resolve phone numbers to names.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Running the App
 
-## Deploy on Vercel
+1. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Open the dashboard**:
+   - Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Troubleshooting
+
+### "Access Denied" or Empty Data
+- **Full Disk Access**: Ensure your terminal has Full Disk Access. If you just granted it, **restart your terminal**.
+- **Contacts Permission**: Run the helper script manually to trigger the permission dialog if it didn't appear:
+  ```bash
+  swift scripts/get_contacts.swift
+  ```
+- **Missing Messages**: The app defaults to analyzing the last 50,000-100,000 messages for performance. You can adjust this limit in `src/lib/imessage.ts`.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Database Access**: `@photon-ai/imessage-kit` (SQLite wrapper)
+- **UI**: Tailwind CSS, Radix UI, shadcn/ui
+- **Charts**: Recharts
+- **Contacts**: Native macOS Contacts framework via Swift helper script
+
+## License
+
+MIT
