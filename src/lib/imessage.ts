@@ -20,7 +20,7 @@ export type ChatSummary = {
   isGroup: boolean;
 };
 
-export async function getGlobalStats() {
+export async function getGlobalStats(searchQuery?: string) {
   const sdk = getSdk();
   const contactMap = await getContactMap();
   
@@ -78,8 +78,8 @@ export async function getGlobalStats() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, stats]) => ({ date, ...stats }));
   
-  // Enrich recent chats with names
-  const recentChats = allChats.slice(0, 20).map(chat => {
+  // Process all chats to enrich with names
+  let displayedChats = allChats.map(chat => {
       let name = chat.displayName || chat.chatId;
       if (!chat.displayName) {
           // Extract handle from iMessage;+123... or use raw ID
@@ -90,17 +90,36 @@ export async function getGlobalStats() {
       return { ...chat, displayName: name };
   });
 
+  // Filter if search query is present
+  if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      displayedChats = displayedChats.filter(c => 
+        (c.displayName && c.displayName.toLowerCase().includes(q)) ||
+        c.chatId.toLowerCase().includes(q)
+      );
+      // Sort by last message (handling potentially null dates)
+      displayedChats.sort((a, b) => {
+          const dateA = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+          const dateB = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+          return dateB - dateA;
+      });
+  } else {
+      // Default to top 20 recent
+      displayedChats = displayedChats.slice(0, 20);
+  }
+
   return {
     totalMessages: messages.total,
     sent,
     received,
     topContacts,
     history,
-    recentChats
+    recentChats: displayedChats // Now contains filtered or sliced list
   };
 }
 
 export async function getChatDetails(chatId: string) {
+  // ... (keep existing implementation)
   console.log(`[getChatDetails] Fetching details for chatId: "${chatId}"`);
   const sdk = getSdk();
   
